@@ -6,7 +6,7 @@
  */
 
 // @ts-check
-"use strict"
+"use strict";
 
 // Load dependencies
 import util from './util.js';

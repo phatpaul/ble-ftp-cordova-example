@@ -17,7 +17,7 @@
  * under the License.
  */
 // @ts-check
-"use-strict"
+"use strict";
 
 import C from "./constant.js";
 import util from './util.js';
@@ -84,6 +84,20 @@ const m = function (
 let app = {
     /**@type {?HTMLDivElement} */
     log_div: null,
+    initForms: function () {
+        /**@type {NodeListOf<HTMLInputElement>} */
+        const fields = document.querySelectorAll('.clearme');
+        for (let i = 0; i < fields.length; i++) {
+            fields[i].innerHTML = "";
+            fields[i].value = "";
+        }
+
+        /**@type {NodeListOf<HTMLInputElement>} */
+        const hdrs = document.querySelectorAll(".AppHeader");
+        for (let i = 0; i < hdrs.length; i++) {
+            hdrs[i].innerHTML = 'BLE-FTP Example -- ' + ('/* @echo APP_VERSION */' || "debug");
+        }
+    },
     /**
      * Clear debug info from form in application UI.
      */
@@ -113,88 +127,78 @@ let app = {
         }
 
         //@ifdef USE_BLE
-        qs("#clearBle").addEventListener("click", function () {
-            //ble.clearFoundDevices();
-            ble.restart();
-        });
-
-        function BleConnectedCb(device) {
-            qs("#deviceName").innerHTML = device.address + " " + device.name;
-            app.showInfo('Connected');
-            ble.readDevInfo(function (devInfo) {// read and display the firmware version
-                qs("#FWVersion").innerHTML = devInfo.fw_version;
+        if (C.USE_BLE) {
+            qs("#clearBle").addEventListener("click", function () {
+                //ble.clearFoundDevices();
+                ble.restart();
             });
-        }
-        function BleDisconnectedCb(error) {
-            qs("#deviceName").innerHTML = "";
-            app.showInfo('Disconnected');
-        }
-        function BleConnErrorCb(error) {
-            app.showInfo('Error: Connection failed: ' + error);
-        }
 
-        qs("#deviceList").addEventListener("click", function (e) {
-            // e.target is the clicked element!
-            // search for delegate
-            let el = e.target;
-            do {
-                if (el.nodeName != "LI") continue;
-                // List item found!  Output the ID!
-                console.log("List item " + el.id + " was clicked!");
-                /** Handler for when deviceHandle in devices list was clicked. */
-                app.initForms();
-                ble.connect(el.id, BleConnectedCb, BleDisconnectedCb, BleConnErrorCb);
-                app.changePage('connected'); // make sure we are on the right page
-                app.showInfo('Connecting...');
-                return;
-            } while ((el = el.parentNode));
+            qs("#deviceList").addEventListener("click", function (e) {
 
-        }, false);
+                function BleConnectedCb(device) {
+                    qs("#deviceName").innerHTML = device.address + " " + device.name;
+                    app.showInfo('Connected');
+                    ble.readDevInfo(function (devInfo) {// read and display the firmware version
+                        qs("#FWVersion").innerHTML = devInfo.fw_version;
+                    });
+                }
+                function BleDisconnectedCb(error) {
+                    qs("#deviceName").innerHTML = "";
+                    app.showInfo('Disconnected');
+                }
+                function BleConnErrorCb(error) {
+                    app.showInfo('Error: Connection failed: ' + error);
+                }
 
-        qs("#ftpInput").addEventListener("change", function () {
-            let rFilename = qs("#ftpFileName").value.trim().substr(0, 18);
-            let form = this;//qs("#ftpInput");
-            let file = form.files[0];
-            ble.writeFTP(rFilename, file, function () {
-                form.value = null;  // erase the <input> so that next onchange event can trigger if select same file again.
+                // e.target is the clicked element!
+                // search for delegate
+                let el = e.target;
+                do {
+                    if (el.nodeName != "LI") continue;
+                    // List item found!  Output the ID!
+                    console.log("List item " + el.id + " was clicked!");
+                    /** Handler for when deviceHandle in devices list was clicked. */
+                    app.initForms();
+                    ble.connect(el.id, BleConnectedCb, BleDisconnectedCb, BleConnErrorCb);
+                    app.changePage('connected'); // make sure we are on the right page
+                    app.showInfo('Connecting...');
+                    return;
+                } while ((el = el.parentNode));
+
+            }, false);
+
+            qs("#ftpInput").addEventListener("change", function () {
+                let rFilename = qs("#ftpFileName").value.trim().substr(0, 18);
+                let form = this;//qs("#ftpInput");
+                let file = form.files[0];
+                ble.writeFTP(rFilename, file, function () {
+                    form.value = null;  // erase the <input> so that next onchange event can trigger if select same file again.
+                });
             });
-        });
 
-        qs("#ftpWrite").addEventListener("click", function () {
-            qs("#ftpInput").click();
-        });
+            qs("#ftpWrite").addEventListener("click", function () {
+                qs("#ftpInput").click();
+            });
 
-        qs("#ftpRead").addEventListener("click", function () {
-            let rFilename = qs("#ftpFileName").value.trim().substr(0, 18); // remote filename
-            function myWriteFileCb(textdata) {
-                util.export_file(rFilename, textdata);
+            qs("#ftpRead").addEventListener("click", function () {
+                let rFilename = qs("#ftpFileName").value.trim().substr(0, 18); // remote filename
+                function myWriteFileCb(textdata) {
+                    util.export_file(rFilename, textdata);
+                }
+                ble.readFTP(rFilename, myWriteFileCb);
+            });
+            // @endif
+
+            /* Before the page closes, disconnect cleanly from the device */
+            window.onbeforeunload = function () {
+                ble.disconnect();
             }
-            ble.readFTP(rFilename, myWriteFileCb);
-        });
-        // @endif
-
-        /* Before the page closes, disconnect cleanly from the device */
-        window.onbeforeunload = function () {
-            app.disconnect();
-        }
-        ble.startLeScan();
-        app.changePage('first'); // start at connect page if USE_BLE
-    },
-
-    initForms: function () {
-        /**@type {NodeListOf<HTMLInputElement>} */
-        const fields = document.querySelectorAll('.clearme');
-        for (let i = 0; i < fields.length; i++) {
-            fields[i].innerHTML = "";
-            fields[i].value = "";
-        }
-
-        /**@type {NodeListOf<HTMLInputElement>} */
-        const hdrs = document.querySelectorAll(".AppHeader");
-        for (let i = 0; i < hdrs.length; i++) {
-            hdrs[i].innerHTML = 'BLE-FTP Example -- ' + ('/* @echo APP_VERSION */' || "debug");
+            ble.startLeScan();
+            app.changePage('first'); // start at connect page if USE_BLE
         }
     },
+
+
 
     //@ifdef USE_BLE
     /**
