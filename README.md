@@ -46,10 +46,10 @@ npm install x@latest
 
 # Prereqs for Android
 
-Note: this was tested using Cordova-Android **version 11**.
+Note: this was tested using Cordova-Android **version 11**.  Android SDK 32.
 
 - Carefully follow all instructions here to install: https://cordova.apache.org/docs/en/11.x/guide/platforms/android/
-  - Android Studio, SDK Packages, SDK tools
+  - Android Studio, SDK Package 32, SDK tools 32.0.0
   - JDK, Gradle
   - Set environment variables PATH, JAVA_HOME, and ANDROID_SDK_ROOT
 

@@ -143,6 +143,41 @@ util.splitLog = function (oldCons, cb) {
     };
 };
 
+/**
+ * @param {Uint8Array} buffer
+ * @returns {string}  hexadecimal formatted string
+ */
+util.bufferToHex = function (buffer) {
+    var s = '', h = '0123456789abcdef';
+    (new Uint8Array(buffer)).forEach(function (v) { s += h[v >> 4] + h[v & 15]; });
+    return s;
+}
+
+/**
+* @param {Uint8Array} buffer
+* @returns {string}  hexadecimal formatted string in MAC address format "xx.xx.xx.xx.xx.xx"
+*/
+util.bufferToMacStr = function (buffer) {
+    var s = '', h = '0123456789abcdef';
+    (new Uint8Array(buffer)).forEach(function (v) { s += h[v >> 4] + h[v & 15] + ":"; });
+    s = s.slice(0, -1); // remove the last :
+    return s;
+}
+
+/**
+ * @param {string} hex  hexadecimal formatted string
+ * @returns {Uint8Array}
+ */
+util.hexToBuffer = function (hex) {
+    hex = hex.toString();//force conversion
+
+    var bufView = new Uint8Array(hex.length / 2); // 2 chars for each byte
+    for (var i = 0; i < bufView.length; i++) {
+        bufView[i] = parseInt(hex.substr(i * 2, 2), 16);
+    }
+    return bufView;
+}
+
 // @ifdef USE_FILESYSTEM
 /**
  * warning, only call this after device-ready
@@ -269,6 +304,30 @@ util.export_file = function (rFilename, textdata, cb) {
     } else {
         util.invoke_save_html5(lFilename, textdata);
     }
+}
+
+/**
+ * Promise to delay
+ * @param {number} ms
+ */
+util.delay = (ms) => {
+    return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
+ * Launch a promise with a timeout.  The first to finish wins the race, but the promise you supply is not canceled/aborted if the timeout happens before it finishes.
+ * @param {Promise<*>} promise 
+ * @param {number} timeout in ms
+ * @param {*=} exception optional value to identify timeout error.  I.e. const timeoutHappened = new Symbol();
+ * @param {boolean=} rejectOnTimeout optional: default=true.  if false, just resolve if true
+ * @returns The promise that you supply or a timeout with exception value that you supply.
+ */
+util.timeout = (promise, timeout, exception = "timeout", rejectOnTimeout = true) => {
+    let timer = -1;
+    return Promise.race([
+        promise,
+        new Promise((_resolve, _reject) => timer = window.setTimeout((rejectOnTimeout) ? (_reject) : (_resolve), timeout, exception))
+    ]).finally(() => window.clearTimeout(timer));
 }
 
 // Export useful stuff.

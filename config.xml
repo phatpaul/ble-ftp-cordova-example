@@ -18,10 +18,15 @@
     <platform name="android">
         <allow-intent href="market:*" />
         <preference name="android-minSdkVersion" value="23" />
-        <preference name="android-targetSdkVersion" value="29" />
+        <preference name="android-targetSdkVersion" value="32" />
     </platform>
     <platform name="ios">
         <allow-intent href="itms:*" />
         <allow-intent href="itms-apps:*" />
+        <!-- https://cordova.apache.org/docs/en/latest/plugin_ref/spec.html#config-file -->
+        <!-- https://cordova.apache.org/docs/en/latest/plugin_ref/spec.html#edit-config -->
+        <config-file parent="NSBluetoothPeripheralUsageDescription" target="*-Info.plist">
+            <string>"Bluetooth is needed to communicate with the device."</string>
+        </config-file>
     </platform>
 </widget>

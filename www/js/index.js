@@ -24,7 +24,6 @@ import util from './util.js';
 
 // @ifdef USE_BLE **
 import ble from './ble-ftp.js';
-/** @typedef {import('./ble-ftp.js').BleDevHandle} BleDevHandle */
 /** @typedef {import('./ble-ftp.js').BleKnownDevices} BleKnownDevices */
 /* @endif */
 
@@ -135,21 +134,6 @@ let app = {
 
             qs("#deviceList").addEventListener("click", function (e) {
 
-                function BleConnectedCb(device) {
-                    qs("#deviceName").innerHTML = device.address + " " + device.name;
-                    app.showInfo('Connected');
-                    ble.readDevInfo(function (devInfo) {// read and display the firmware version
-                        qs("#FWVersion").innerHTML = devInfo.fw_version;
-                    });
-                }
-                function BleDisconnectedCb(error) {
-                    qs("#deviceName").innerHTML = "";
-                    app.showInfo('Disconnected');
-                }
-                function BleConnErrorCb(error) {
-                    app.showInfo('Error: Connection failed: ' + error);
-                }
-
                 // e.target is the clicked element!
                 // search for delegate
                 let el = e.target;
@@ -159,7 +143,7 @@ let app = {
                     console.log("List item " + el.id + " was clicked!");
                     /** Handler for when deviceHandle in devices list was clicked. */
                     app.initForms();
-                    ble.connect(el.id, BleConnectedCb, BleDisconnectedCb, BleConnErrorCb);
+                    ble.connect(el.id);
                     app.changePage('connected'); // make sure we are on the right page
                     app.showInfo('Connecting...');
                     return;
@@ -295,7 +279,19 @@ let app = {
 }; // end of app object  
 
 // @ifdef USE_BLE
+function BleConnectedCb(device) {
+    qs("#deviceName").innerHTML = device.address + " " + device.name;
+    app.showInfo('Connected');
+    ble.readDevInfo(function (devInfo) {// read and display the firmware version
+        qs("#FWVersion").innerHTML = devInfo.fw_ver;
+    });
+}
+function BleDisconnectedCb(error) {
+    qs("#deviceName").innerHTML = "";
+    app.showInfo('Disconnected');
+}
 if (C.USE_BLE) {
-    ble.bindEvents(app.displayBleDeviceList, app.onload);
+    ble.init(app.onload);
+    ble.bindEvents(app.displayBleDeviceList, BleConnectedCb, BleDisconnectedCb);
 }
 // @endif
